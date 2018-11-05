@@ -1,0 +1,63 @@
+## Guide Overview
+#In order to receive an alert when a partition is added to a table, the following steps are required:
+#1. Ensure you Glue Crawlers are logging to a stream in CloudWatch
+#2. Create an SNS topic and subscribers to receive alerts via email.
+#3. Then create a Lambda Function that is triggered by a log arriving in the stream. Then run code will check for a certain term in the log and send a notification if it matches.
+
+############################################################################################
+import json
+import boto3
+import gzip, io
+import base64
+import re
+import time
+
+# Unzip and decode
+def gunzip_bytes_obj(bytes_obj):
+    in_ = io.BytesIO()
+    in_.write(bytes_obj)
+    in_.seek(0)
+    with gzip.GzipFile(fileobj=in_, mode='rb') as fo:
+        gunzipped_bytes_obj = fo.read()
+    return gunzipped_bytes_obj.decode()
+
+# Take data and make readable as json
+def lambda_handler(event, context):
+    data = event["awslogs"]["data"]
+    pass_data = base64.b64decode(data)
+    original_string = gunzip_bytes_obj(pass_data)
+    original_json = json.loads(original_string)
+    #print original_json
+
+    # Check if it is the message we interested in
+    the_crawler = "Crawler Log Stream:   " + original_json['logStream'] + '\n'
+    the_time = "Local Time:  " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(original_json['logEvents'][0]['timestamp'])/1000)) + '\n'
+    
+    # Check if message includes "new partitions"
+    patrn = re.compile(r'.*Created partitions.*')
+    the_events = ""
+    for i in range(len(original_json['logEvents'])):
+        if (patrn.match(original_json['logEvents'][i]['message'])):
+            the_events = the_events + str(original_json['logEvents'][i]['message']) + "\n"
+            print the_events
+
+
+    # If there are event messages, then compose the message to send
+    if the_events != "":        
+        the_events = "New Partition messages: " + "\n" +  the_events
+        message = the_crawler + the_time + the_events
+
+    # Send the SNS email:
+        client = boto3.client('sns')
+        response = client.publish(
+            TargetArn="arn:aws:sns:us-east-1:0123456789:crawlerParitionAdded", ## REPLACE THIS
+            Message=message,
+            MessageStructure='text'
+        )
+    
+    return message
+    #{
+        #"statusCode": 200,
+        #"theResults": message
+    #}
+############################################################################################
