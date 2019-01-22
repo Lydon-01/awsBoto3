@@ -1,0 +1,42 @@
+## This script will automate reading a file, writing it out, reading it to memory, replacing the file in S3, then writing the file.
+## It is meant for testing behavior.
+
+import json
+import os
+import boto3
+from pyspark.context import SparkContext
+from awsglue.transforms import *
+from awsglue.context import GlueContext
+glueContext = GlueContext(sc)
+sc = SparkContext.getOrCreate()
+
+
+
+%pyspark
+# 1. Read CSV and Write the original JSON
+print("Read as DynFrame from catalog")
+dyf0 = glueContext.create_dynamic_frame.from_catalog(database = "csv", table_name = "csv_simple")
+print("Write to S3 as json")
+glueContext.write_dynamic_frame.from_options(frame = dyf0, connection_type = "s3", connection_options = {"path": "s3://my_bucket/temp/json/"}, format = "json")
+
+# 2. Move the file to a new name
+print("Import OS and run a move loop for S3 json files")
+os.system('FILES0=`aws s3 ls s3://my_bucket/temp/json/ | grep -o run.*`; for i in $FILES0; do aws s3 mv s3://my_bucket/temp/json/$i s3://my_bucket/temp/json/json_overwrite1.json; done;')
+
+# 3. Read the new JSON name
+print("Read the new parquet file to DF")
+dyf1 = glueContext.create_dynamic_frame.from_options('s3',{'paths': ['s3://my_bucket/temp/json/json_overwrite1']},'json')
+
+# 4. While that JSON file is in memory, re-run the CSV to JSON operation
+print("Write to S3 as json AGAIN")
+glueContext.write_dynamic_frame.from_options(frame = dyf0, connection_type = "s3", connection_options = {"path": "s3://my_bucket/temp/json/"}, format = "json")
+
+# 5. Then overwrite and overwrite the JSON file 
+print("Import OS and run a move loop for S3 json files AGAIN")
+os.system('FILES0=`aws s3 ls s3://my_bucket/temp/json/ | grep -o run.*`; for i in $FILES0; do aws s3 mv s3://my_bucket/temp/json/$i s3://my_bucket/temp/json/json_overwrite1.json; done;')
+
+# 6. Try and write the frame that was stored in memory previously
+print("Write to new Parquet file to new S3 location AGAIN")
+glueContext.write_dynamic_frame.from_options(frame = dyf1, connection_type = "s3", connection_options = {"path": "s3://my_bucket/temp/parquet"}, format = "parquet")
+
+print("All done")
