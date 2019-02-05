@@ -10,33 +10,31 @@ from awsglue.context import GlueContext
 glueContext = GlueContext(sc)
 sc = SparkContext.getOrCreate()
 
+## Fill in these variables! 
+myDb = "csv"
+myTable = "csv_policestats"
+s3temp = "s3://my-glue/temp"
 
 
-%pyspark
-# 1. Read CSV and Write the original JSON
-print("Read as DynFrame from catalog")
-dyf0 = glueContext.create_dynamic_frame.from_catalog(database = "csv", table_name = "csv_simple")
-print("Write to S3 as json")
-glueContext.write_dynamic_frame.from_options(frame = dyf0, connection_type = "s3", connection_options = {"path": "s3://my_bucket/temp/json/"}, format = "json")
+print("1. Read as DynFrame from catalog")
+dyf0 = glueContext.create_dynamic_frame.from_catalog(database = myDb, table_name = myTable)
 
-# 2. Move the file to a new name
-print("Import OS and run a move loop for S3 json files")
-os.system('FILES0=`aws s3 ls s3://my_bucket/temp/json/ | grep -o run.*`; for i in $FILES0; do aws s3 mv s3://my_bucket/temp/json/$i s3://my_bucket/temp/json/json_overwrite1.json; done;')
+print("2. Write to S3 as json")
+glueContext.write_dynamic_frame.from_options(frame = dyf0, connection_type = "s3", connection_options = {"path": s3temp + "/json/"}, format = "json")
 
-# 3. Read the new JSON name
-print("Read the new parquet file to DF")
-dyf1 = glueContext.create_dynamic_frame.from_options('s3',{'paths': ['s3://my_bucket/temp/json/json_overwrite1']},'json')
+print("3. Import OS and run a move loop for S3 json files")
+os.system('FILES0=`aws s3 ls s3://my-glue/temp/json/ | grep -o run.*`; for i in $FILES0; do aws s3 mv s3://my-glue/temp/json/$i s3://my-glue/temp/json/json_overwrite1.json; done;')
 
-# 4. While that JSON file is in memory, re-run the CSV to JSON operation
-print("Write to S3 as json AGAIN")
-glueContext.write_dynamic_frame.from_options(frame = dyf0, connection_type = "s3", connection_options = {"path": "s3://my_bucket/temp/json/"}, format = "json")
+print("4. Read the new parquet file to DF")
+dyf1 = glueContext.create_dynamic_frame.from_options('s3',{'paths': ['s3://my-glue/temp/json/json_overwrite1']},'json')
 
-# 5. Then overwrite and overwrite the JSON file 
-print("Import OS and run a move loop for S3 json files AGAIN")
-os.system('FILES0=`aws s3 ls s3://my_bucket/temp/json/ | grep -o run.*`; for i in $FILES0; do aws s3 mv s3://my_bucket/temp/json/$i s3://my_bucket/temp/json/json_overwrite1.json; done;')
+print("5. While that JSON file is in memory, re-run the CSV to JSON operation")
+glueContext.write_dynamic_frame.from_options(frame = dyf0, connection_type = "s3", connection_options = {"path": s3temp + "/json/"}, format = "json")
 
-# 6. Try and write the frame that was stored in memory previously
-print("Write to new Parquet file to new S3 location AGAIN")
-glueContext.write_dynamic_frame.from_options(frame = dyf1, connection_type = "s3", connection_options = {"path": "s3://my_bucket/temp/parquet"}, format = "parquet")
+print("6. Import OS and run a move loop for S3 json files AGAIN to overwrite")
+os.system('FILES0=`aws s3 ls s3://my-glue/temp/json/ | grep -o run.*`; for i in $FILES0; do aws s3 mv s3://my-glue/temp/json/$i s3://my-glue/temp/json/json_overwrite1.json; done;')
+
+print("7. Write to new Parquet file to new S3 location AGAIN")
+glueContext.write_dynamic_frame.from_options(frame = dyf1, connection_type = "s3", connection_options = {"path":  s3temp + "/parquet"}, format = "parquet")
 
 print("All done")
