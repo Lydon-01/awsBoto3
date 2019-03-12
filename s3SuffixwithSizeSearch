@@ -1,0 +1,41 @@
+## Use this script to find files in a bucket with a certain suffix below a certain size
+
+
+## Change these variables as needed
+my_bucket = 'lydon-glue'
+key_suffix = '*.csv'
+key_size = 2000
+
+import boto3
+import fnmatch
+s3 = boto3.client('s3')
+		
+# Create an array of all keys with desired suffix
+def s3SuffixSearch(my_bucket,key_suffix):
+	s3_keys = s3.list_objects_v2(Bucket=my_bucket)
+	found_keys = []
+	for item in s3_keys['Contents']:
+		if fnmatch.fnmatch(item['Key'], key_suffix):
+			found_keys.append(item['Key'])
+			#print item['Key']
+	return found_keys
+	
+# Check for size of all the found suffix keys 
+def s3KeySize(found_keys,key_size):
+	small_keys = []
+	print "================================================================================================="
+	print "The keys in " + my_bucket + " that have suffix " + key_suffix + " are smaller than: " + str(key_size)
+	print "================================================================================================="
+	for item in found_keys:
+		#s3.head_object(Bucket=my_bucket, Key=item)
+		response = s3.head_object(Bucket=my_bucket, Key=item)
+		size = response['ContentLength']
+		if size < 2000:
+			small_keys.append(item)
+			print item
+	print "================================================================================================="
+
+			
+# Use the functions to print all the small keys:			
+found_keys = s3SuffixSearch(my_bucket,key_suffix)
+s3KeySize(found_keys,key_size)
