@@ -1,15 +1,21 @@
 ## The below code will look for files with a certain suffix in S3.
-## I used this to get a list of all my CSV files
-# Replace as needed:
-# - 'my-bucket'
-# - '*.csv'
+## For example, you can get a list of all my CSV files
+
+## Examples of variables that can be passed: 
+#my_bucket = 'lydon-test'
+#key_suffix = '*.csv'
 
 import boto3
 import fnmatch
-
 s3 = boto3.client('s3')
-list = s3.list_objects_v2(Bucket='my-bucket')
+		
+# Create an array of all keys with desired suffix
+def s3SuffixSearch(my_bucket,key_suffix):
+	s3_keys = s3.list_objects_v2(Bucket=my_bucket)
+	found_keys = []
+	for item in s3_keys['Contents']:
+		if fnmatch.fnmatch(item['Key'], key_suffix):
+			found_keys.append(item['Key'])
+			#print item['Key']
+	return found_keys
 	
-for item in list['Contents']:
-	if fnmatch.fnmatch(item['Key'], '*.csv'):
-		print item['Key']
