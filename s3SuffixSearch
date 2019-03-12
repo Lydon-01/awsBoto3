@@ -1,0 +1,15 @@
+## The below code will look for files with a certain suffix in S3.
+## I used this to get a list of all my CSV files
+# Replace as needed:
+# - 'my-bucket'
+# - '*.csv'
+
+import boto3
+import fnmatch
+
+s3 = boto3.client('s3')
+list = s3.list_objects_v2(Bucket='my-bucket')
+	
+for item in list['Contents']:
+	if fnmatch.fnmatch(item['Key'], '*.csv'):
+		print item['Key']
