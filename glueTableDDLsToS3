@@ -2,9 +2,9 @@
 ## This script will loop through all databases and tables in your Glue Data Catalog for a region
 ## and run an Athena SHOW TABLE to backup their DDL's to S3.
 
-# Set the variables
-region_var = 'us-east-1'  # Change the region here if necessary
-s3_var = 's3://lydon-glue/temp/'  # Should write out data respective to this path
+# Set your variables
+region_var = 'us-east-1'  # Change the region for the script to run
+s3_var = 's3://my-glue/ddl_backups/'  # Change the S3 location where the query will write DDL files
 
 # Modules and basics
 import boto3
