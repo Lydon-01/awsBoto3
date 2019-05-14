@@ -1,20 +1,20 @@
-## This script is taken from MP23 on Stack Overflow
+## This script will list all tables in your Glue Data Catalog for a region. 
 
+# Credit for this script goes to MP23 on StackOverflow
+# https://stackoverflow.com/questions/46080504/how-to-list-all-databases-and-tables-in-aws-glue-catalog
 
 import boto3
 
+# Change region name if necessary
 client = boto3.client('glue',region_name='us-east-1')
 responseGetDatabases = client.get_databases()
 databaseList = responseGetDatabases['DatabaseList']
 
 for databaseDict in databaseList:
-
     databaseName = databaseDict['Name']
     print '\ndatabaseName: ' + databaseName
-    
     responseGetTables = client.get_tables( DatabaseName = databaseName )
     tableList = responseGetTables['TableList']
-
     for tableDict in tableList:
          tableName = tableDict['Name']
          print '\n-- tableName: '+tableName
