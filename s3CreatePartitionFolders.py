@@ -18,9 +18,7 @@ s3 = boto3.client('s3')
 
 # You must change these
 bucket_name = "YOUR-BUCKET-NAME"  #Just the bucket name. Example "best-bucket"
-bucket_name = "lydon-glue"
 bucket_dir = "YOUR/SUB/DIRECTORY/" #Where do you want these folders created?
-bucket_dir = "datasets/csv/csv_gz_partitioned/"
 top_part = "y=" #The top-level partition you are creating. Example "y="
 sub1_part = "d=" #The sub-partition in side each top-level partition. Example "d="
 
