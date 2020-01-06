@@ -1,4 +1,5 @@
-## This function should help you to 
+## This function should help you to automatically trigger the run of newly created crawler. 
+## Work in progress, test and use discression 
 # 
 # 1. Open the Lambda console and choose Create Function
 #    1.1. Function name "glueStartLastCreatedCrawler"
