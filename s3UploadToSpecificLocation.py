@@ -1,6 +1,10 @@
 ## For my own reference, here is how to easily download an HTTP file and 
 ## upload it to a specific S3 path.
 
+# Boto3 resource client
+import boto3
+s3_resource = boto3.resource('s3')
+
 ## This library should be built-into Python3 and allow you to download a file
 import urllib.request
 urllib.request.urlretrieve ("https://www.guru99.com/images/Pythonnew/python19_1.png", "my_pic.png")
